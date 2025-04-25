@@ -1,0 +1,260 @@
+{% extends 'layout.html' %}
+
+{% block title %}Manual Testing - Web Security Recon Tool{% endblock %}
+
+{% block content %}
+<div class="section">
+    <h1 class="section-title">
+        <i class="fas fa-tools"></i> Manual Testing
+    </h1>
+    <p>Perform targeted testing for specific vulnerabilities from the OWASP Top 10.</p>
+    
+    <form method="POST" action="{{ url_for('manual_testing') }}" class="needs-validation" novalidate>
+        <div class="form-group mb-3">
+            <label for="target">Target URL:</label>
+            <input type="url" id="target" name="target" class="form-control" placeholder="https://example.com" required
+                   value="{{ request.form.get('target', '') }}">
+            <div class="invalid-feedback">
+                Please enter a valid URL (e.g., https://example.com)
+            </div>
+            <small class="text-muted">Enter the full URL including http:// or https://</small>
+        </div>
+        
+        <div class="form-group mb-3">
+            <label for="test_type">Test Type:</label>
+            <select id="test_type" name="test_type" class="form-control" required>
+                <option value="">-- Select Test Type --</option>
+                <option value="xss" {% if request.form.get('test_type') == 'xss' %}selected{% endif %}>Cross-Site Scripting (XSS)</option>
+                <option value="sql_injection" {% if request.form.get('test_type') == 'sql_injection' %}selected{% endif %}>SQL Injection</option>
+                <option value="csrf" {% if request.form.get('test_type') == 'csrf' %}selected{% endif %}>Cross-Site Request Forgery (CSRF)</option>
+                <option value="idor" {% if request.form.get('test_type') == 'idor' %}selected{% endif %}>Insecure Direct Object Reference (IDOR)</option>
+                <option value="ssti" {% if request.form.get('test_type') == 'ssti' %}selected{% endif %}>Server-Side Template Injection (SSTI)</option>
+            </select>
+            <div class="invalid-feedback">
+                Please select a test type
+            </div>
+        </div>
+        
+        <div class="form-group mb-3">
+            <label for="payload">Custom Payload (Optional):</label>
+            <input type="text" id="payload" name="payload" class="form-control" 
+                   value="{{ request.form.get('payload', '') }}">
+            <small class="text-muted">Leave empty to use default payloads for the selected test type</small>
+        </div>
+        
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-bug"></i> Start Manual Test
+            </button>
+        </div>
+    </form>
+</div>
+
+{% if results %}
+<div class="section">
+    <h2 class="section-title">
+        <i class="fas fa-clipboard-list"></i> Manual Testing Results
+    </h2>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title mb-0">Test Information</h3>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <tr>
+                    <th width="30%">Target URL:</th>
+                    <td>{{ results.target }}</td>
+                </tr>
+                <tr>
+                    <th>Test Type:</th>
+                    <td>
+                        {% if results.test_type == 'xss' %}
+                        Cross-Site Scripting (XSS)
+                        {% elif results.test_type == 'sql_injection' %}
+                        SQL Injection
+                        {% elif results.test_type == 'csrf' %}
+                        Cross-Site Request Forgery (CSRF)
+                        {% elif results.test_type == 'idor' %}
+                        Insecure Direct Object Reference (IDOR)
+                        {% elif results.test_type == 'ssti' %}
+                        Server-Side Template Injection (SSTI)
+                        {% else %}
+                        {{ results.test_type }}
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>Timestamp:</th>
+                    <td>{{ results.timestamp }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    
+    {% if results.error %}
+    <div class="alert alert-danger">
+        <i class="fas fa-exclamation-circle"></i> Error: {{ results.error }}
+    </div>
+    {% endif %}
+    
+    {% if results.results %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title mb-0">Vulnerability Assessment</h3>
+        </div>
+        <div class="card-body">
+            {% if results.results.vulnerable %}
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle"></i> <strong>Vulnerability Detected!</strong> 
+                The target appears to be vulnerable to {{ results.test_type|upper }}.
+            </div>
+            
+            {% if results.results.details %}
+            <h4 class="mt-4">Vulnerability Details</h4>
+            
+            {% if results.test_type == 'xss' %}
+                {% for param_name, detail in results.results.details.items() %}
+                <div class="result-item high-risk mb-3">
+                    <h5>XSS in {{ param_name }}</h5>
+                    <div class="result-meta">
+                        <strong>Payload:</strong> <code>{{ detail.payload }}</code>
+                    </div>
+                    <div>
+                        <a href="{{ detail.url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-external-link-alt"></i> Test URL
+                        </a>
+                    </div>
+                    <div class="mt-2">
+                        <p><strong>Notes:</strong> The payload was successfully reflected in the response, indicating a potential XSS vulnerability.</p>
+                    </div>
+                </div>
+                {% endfor %}
+            
+            {% elif results.test_type == 'sql_injection' %}
+                {% for param_name, detail in results.results.details.items() %}
+                <div class="result-item high-risk mb-3">
+                    <h5>SQL Injection in {{ param_name }}</h5>
+                    <div class="result-meta">
+                        <strong>Payload:</strong> <code>{{ detail.payload }}</code> |
+                        <strong>Evidence:</strong> {{ detail.evidence }}
+                    </div>
+                    <div>
+                        <a href="{{ detail.url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-external-link-alt"></i> Test URL
+                        </a>
+                    </div>
+                    {% if detail.error_based %}
+                    <div class="mt-2">
+                        <p><strong>Notes:</strong> SQL error messages detected in the response, indicating a potential SQL Injection vulnerability.</p>
+                    </div>
+                    {% endif %}
+                    {% if detail.blind %}
+                    <div class="mt-2">
+                        <p><strong>Notes:</strong> Abnormal response detected, indicating a potential blind SQL Injection vulnerability.</p>
+                        <p>Original length: {{ detail.original_length }}, Test length: {{ detail.test_length }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                
+            {% elif results.test_type == 'csrf' %}
+                {% for form_url, detail in results.results.details.items() %}
+                <div class="result-item medium-risk mb-3">
+                    <h5>CSRF Vulnerability</h5>
+                    <div class="result-meta">
+                        <strong>Form URL:</strong> {{ detail.form_action }} |
+                        <strong>Method:</strong> {{ detail.method }}
+                    </div>
+                    <div class="mt-2">
+                        <p><strong>Reason:</strong> {{ detail.reason }}</p>
+                        <p><strong>Field count:</strong> {{ detail.fields|length }} fields found</p>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-outline-info" 
+                                data-toggle-target="csrf-poc-{{ loop.index }}">
+                            <i class="fas fa-code"></i> View CSRF PoC
+                        </button>
+                    </div>
+                    <div id="csrf-poc-{{ loop.index }}" style="display: none; margin-top: 10px;">
+                        <pre><code class="language-html">{{ detail.csrf_poc }}</code></pre>
+                    </div>
+                </div>
+                {% endfor %}
+                
+            {% elif results.test_type == 'idor' %}
+                {% for url, detail in results.results.details.items() %}
+                <div class="result-item medium-risk mb-3">
+                    <h5>IDOR Vulnerability</h5>
+                    {% if detail.parameter %}
+                    <div class="result-meta">
+                        <strong>Parameter:</strong> {{ detail.parameter }} |
+                        <strong>Original Value:</strong> {{ detail.original_value }} |
+                        <strong>Tested Value:</strong> {{ detail.tested_value }}
+                    </div>
+                    {% endif %}
+                    {% if detail.original_id %}
+                    <div class="result-meta">
+                        <strong>Original ID:</strong> {{ detail.original_id }} |
+                        <strong>Tested ID:</strong> {{ detail.tested_id }}
+                    </div>
+                    {% endif %}
+                    <div>
+                        <a href="{{ url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-external-link-alt"></i> Test URL
+                        </a>
+                    </div>
+                    <div class="mt-2">
+                        <p><strong>Similarity:</strong> {{ (detail.similarity * 100)|round(2) }}% similar content found</p>
+                        <p><strong>Notes:</strong> The server returned a successful response with different but valid content when using another ID, indicating a potential IDOR vulnerability.</p>
+                    </div>
+                </div>
+                {% endfor %}
+                
+            {% elif results.test_type == 'ssti' %}
+                {% for param_name, detail in results.results.details.items() %}
+                <div class="result-item high-risk mb-3">
+                    <h5>SSTI in {{ param_name }}</h5>
+                    <div class="result-meta">
+                        <strong>Payload:</strong> <code>{{ detail.payload }}</code> |
+                        <strong>Evidence:</strong> {{ detail.evidence }}
+                    </div>
+                    <div>
+                        <a href="{{ detail.url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-external-link-alt"></i> Test URL
+                        </a>
+                    </div>
+                    <div class="mt-2">
+                        <p><strong>Response Fragment:</strong></p>
+                        <pre><code>{{ detail.response_fragment }}</code></pre>
+                    </div>
+                </div>
+                {% endfor %}
+            {% endif %}
+            
+            {% endif %}
+            
+            {% else %}
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle"></i> No {{ results.test_type|upper }} vulnerabilities were detected.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="mt-4">
+        <a href="{{ url_for('advanced_exploitation') }}" class="btn btn-primary">
+            <i class="fas fa-bomb"></i> Proceed to Advanced Exploitation
+        </a>
+        <form method="POST" action="{{ url_for('reports') }}" class="d-inline">
+            <input type="hidden" name="target" value="{{ results.target }}">
+            <input type="hidden" name="report_title" value="Manual Testing Report - {{ results.test_type|upper }} - {{ results.target }}">
+            <button type="submit" class="btn btn-secondary">
+                <i class="fas fa-save"></i> Save Report
+            </button>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

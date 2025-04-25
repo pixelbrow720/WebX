@@ -1,0 +1,252 @@
+{% extends 'layout.html' %}
+
+{% block title %}Attack Surface Mapping - Web Security Recon Tool{% endblock %}
+
+{% block content %}
+<div class="section">
+    <h1 class="section-title">
+        <i class="fas fa-map"></i> Attack Surface Mapping
+    </h1>
+    <p>Map the application's attack surface by discovering endpoints, input parameters, and authentication mechanisms.</p>
+    
+    <form method="POST" action="{{ url_for('attack_surface') }}" class="needs-validation" novalidate>
+        <div class="form-group mb-3">
+            <label for="target">Target URL:</label>
+            <input type="url" id="target" name="target" class="form-control" placeholder="https://example.com" required
+                   value="{{ request.form.get('target', '') }}">
+            <div class="invalid-feedback">
+                Please enter a valid URL (e.g., https://example.com)
+            </div>
+            <small class="text-muted">Enter the full URL including http:// or https://</small>
+        </div>
+        
+        <div class="form-group mb-3">
+            <label for="crawl_depth">Crawl Depth:</label>
+            <input type="number" id="crawl_depth" name="crawl_depth" class="form-control" min="1" max="5"
+                   value="{{ request.form.get('crawl_depth', 2) }}">
+            <small class="text-muted">Higher depth values result in more thorough scanning but take longer (1-5)</small>
+        </div>
+        
+        <div class="form-group mb-3">
+            <label>Options:</label>
+            <div class="checkbox-group">
+                <input type="checkbox" class="form-check-input" id="endpoints_only" name="endpoints_only"
+                       {% if 'endpoints_only' in request.form %}checked{% endif %}>
+                <label class="form-check-label" for="endpoints_only">
+                    Only list endpoints (faster scan)
+                </label>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-map-marker-alt"></i> Map Attack Surface
+            </button>
+        </div>
+    </form>
+</div>
+
+{% if results %}
+<div class="section">
+    <h2 class="section-title">
+        <i class="fas fa-sitemap"></i> Attack Surface Mapping Results
+    </h2>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title mb-0">Target Information</h3>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <tr>
+                    <th width="30%">Target URL:</th>
+                    <td>{{ results.target }}</td>
+                </tr>
+                <tr>
+                    <th>Timestamp:</th>
+                    <td>{{ results.timestamp }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    
+    {% if results.pages %}
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="card-title mb-0">Discovered Pages</h3>
+            <span class="badge bg-info">{{ results.pages|length }} pages</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>URL</th>
+                            <th>Input Fields</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for page in results.pages %}
+                        <tr>
+                            <td>
+                                <a href="{{ page.url }}" target="_blank">{{ page.url }}</a>
+                            </td>
+                            <td>
+                                {% if page.inputs and page.inputs|length > 0 %}
+                                <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                        data-toggle-target="page-inputs-{{ loop.index }}">
+                                    Show {{ page.inputs|length }} forms
+                                </button>
+                                <div id="page-inputs-{{ loop.index }}" style="display: none; margin-top: 10px;">
+                                    {% for form in page.inputs %}
+                                    <div class="card mb-2">
+                                        <div class="card-header">
+                                            <strong>Form: {{ form.form_action }}</strong>
+                                            <span class="badge bg-secondary">{{ form.method }}</span>
+                                        </div>
+                                        <div class="card-body">
+                                            <ul>
+                                                {% for input in form.inputs %}
+                                                <li>
+                                                    <strong>{{ input.name }}</strong> 
+                                                    ({{ input.type }}{% if input.id %}, id: {{ input.id }}{% endif %})
+                                                </li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <span class="text-muted">No forms</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if page.error %}
+                                <span class="text-danger">Error: {{ page.error }}</span>
+                                {% else %}
+                                <span class="text-success">OK</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if results.endpoints %}
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="card-title mb-0">API Endpoints</h3>
+            <span class="badge bg-info">{{ results.endpoints|length }} endpoints</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>URL</th>
+                            <th>Type</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for endpoint in results.endpoints %}
+                        <tr>
+                            <td>
+                                <a href="{{ endpoint.url }}" target="_blank">{{ endpoint.url }}</a>
+                            </td>
+                            <td>{{ endpoint.type }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if results.javascript_endpoints %}
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="card-title mb-0">JavaScript Endpoints</h3>
+            <span class="badge bg-info">{{ results.javascript_endpoints|length }} endpoints</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Endpoint</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for endpoint in results.javascript_endpoints %}
+                        <tr>
+                            <td>{{ endpoint }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if results.authentication_mechanisms %}
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="card-title mb-0">Authentication Mechanisms</h3>
+            <span class="badge bg-info">{{ results.authentication_mechanisms|length }} mechanisms</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Page</th>
+                            <th>Type</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for auth in results.authentication_mechanisms %}
+                        <tr>
+                            <td>{{ auth.page }}</td>
+                            <td>{{ auth.type }}</td>
+                            <td>
+                                <code>{{ auth.value }}</code>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if results.error %}
+    <div class="alert alert-danger">
+        Error: {{ results.error }}
+    </div>
+    {% endif %}
+    
+    <div class="mt-4">
+        <a href="{{ url_for('vulnerability_scan') }}" class="btn btn-primary">
+            <i class="fas fa-shield-alt"></i> Proceed to Vulnerability Scanning
+        </a>
+        <form method="POST" action="{{ url_for('reports') }}" class="d-inline">
+            <input type="hidden" name="target" value="{{ results.target }}">
+            <input type="hidden" name="report_title" value="Attack Surface Report - {{ results.target }}">
+            <button type="submit" class="btn btn-secondary">
+                <i class="fas fa-save"></i> Save Report
+            </button>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

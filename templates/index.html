@@ -1,0 +1,141 @@
+{% extends 'layout.html' %}
+
+{% block title %}AI-Powered Web Security Recon Tool{% endblock %}
+
+{% block content %}
+<div class="section">
+    <h1 class="text-center mb-4">AI-Powered Web Security Reconnaissance Tool</h1>
+    <p class="text-center mb-4">A comprehensive platform for web security testing and vulnerability assessment</p>
+    
+    <div class="tool-grid">
+        <div class="card tool-card">
+            <div class="card-body">
+                <div class="feature-icon">
+                    <i class="fas fa-search"></i>
+                </div>
+                <h3>Reconnaissance</h3>
+                <p>Gather information about targets, including subdomains, infrastructure details, and technology stack identification.</p>
+                <ul>
+                    <li>Subdomain enumeration</li>
+                    <li>Shodan integration</li>
+                    <li>DNS record analysis</li>
+                    <li>WHOIS information</li>
+                </ul>
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('reconnaissance') }}" class="btn btn-primary">Start Reconnaissance</a>
+            </div>
+        </div>
+        
+        <div class="card tool-card">
+            <div class="card-body">
+                <div class="feature-icon">
+                    <i class="fas fa-map"></i>
+                </div>
+                <h3>Attack Surface Mapping</h3>
+                <p>Identify all potential entry points and areas of vulnerability in the target application.</p>
+                <ul>
+                    <li>Endpoint enumeration</li>
+                    <li>Input parameter identification</li>
+                    <li>Authentication analysis</li>
+                    <li>API endpoint discovery</li>
+                </ul>
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('attack_surface') }}" class="btn btn-primary">Map Attack Surface</a>
+            </div>
+        </div>
+        
+        <div class="card tool-card">
+            <div class="card-body">
+                <div class="feature-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h3>Vulnerability Scanning</h3>
+                <p>Automated scans to identify common security weaknesses and misconfigurations.</p>
+                <ul>
+                    <li>OWASP ZAP integration</li>
+                    <li>Parameter fuzzing</li>
+                    <li>Security header checks</li>
+                    <li>CORS configuration analysis</li>
+                </ul>
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('vulnerability_scan') }}" class="btn btn-primary">Run Vulnerability Scan</a>
+            </div>
+        </div>
+        
+        <div class="card tool-card">
+            <div class="card-body">
+                <div class="feature-icon">
+                    <i class="fas fa-tools"></i>
+                </div>
+                <h3>Manual Testing</h3>
+                <p>Tools for manual assessment of OWASP Top 10 vulnerabilities and other security issues.</p>
+                <ul>
+                    <li>XSS testing</li>
+                    <li>SQL Injection</li>
+                    <li>CSRF vulnerabilities</li>
+                    <li>IDOR and SSTI</li>
+                </ul>
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('manual_testing') }}" class="btn btn-primary">Manual Testing Tools</a>
+            </div>
+        </div>
+        
+        <div class="card tool-card">
+            <div class="card-body">
+                <div class="feature-icon">
+                    <i class="fas fa-bomb"></i>
+                </div>
+                <h3>Advanced Exploitation</h3>
+                <p>Combine vulnerabilities to demonstrate real-world attack scenarios and impact.</p>
+                <ul>
+                    <li>Vulnerability chaining</li>
+                    <li>Proof of Concept creation</li>
+                    <li>Impact assessment</li>
+                    <li>Exploitation techniques</li>
+                </ul>
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('advanced_exploitation') }}" class="btn btn-primary">Advanced Exploitation</a>
+            </div>
+        </div>
+        
+        <div class="card tool-card">
+            <div class="card-body">
+                <div class="feature-icon">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <h3>Reporting</h3>
+                <p>Comprehensive reports with findings, evidence, and remediation recommendations.</p>
+                <ul>
+                    <li>JSON-based reports</li>
+                    <li>Vulnerability documentation</li>
+                    <li>AI-powered analysis</li>
+                    <li>Mitigation recommendations</li>
+                </ul>
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('reports') }}" class="btn btn-primary">View Reports</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <h2 class="section-title">Getting Started</h2>
+    <ol>
+        <li>Begin with <strong>Reconnaissance</strong> to collect information about your target.</li>
+        <li>Use <strong>Attack Surface Mapping</strong> to identify potential entry points.</li>
+        <li>Run <strong>Vulnerability Scans</strong> to automatically detect common security issues.</li>
+        <li>Perform <strong>Manual Testing</strong> on specific areas of interest.</li>
+        <li>Try <strong>Advanced Exploitation</strong> to chain vulnerabilities and assess real impact.</li>
+        <li>Generate comprehensive <strong>Reports</strong> with AI-powered analysis and recommendations.</li>
+    </ol>
+    <div class="alert alert-info mt-4">
+        <i class="fas fa-lightbulb"></i> <strong>Note:</strong> This tool is designed for security professionals conducting authorized security assessments. Always ensure you have permission to test your targets.
+    </div>
+</div>
+{% endblock %}

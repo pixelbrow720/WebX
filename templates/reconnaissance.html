@@ -1,0 +1,225 @@
+{% extends 'layout.html' %}
+
+{% block title %}Reconnaissance - Web Security Recon Tool{% endblock %}
+
+{% block content %}
+<div class="section">
+    <h1 class="section-title">
+        <i class="fas fa-search"></i> Reconnaissance
+    </h1>
+    <p>Gather intelligence about your target domain, including subdomains, infrastructure details, and technology stack.</p>
+    
+    <form method="POST" action="{{ url_for('reconnaissance') }}" class="needs-validation" novalidate>
+        <div class="form-group mb-3">
+            <label for="target">Target Domain:</label>
+            <input type="text" id="target" name="target" class="form-control" placeholder="example.com" required 
+                   value="{{ request.form.get('target', '') }}" pattern="^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$">
+            <div class="invalid-feedback">
+                Please enter a valid domain name (e.g., example.com)
+            </div>
+            <small class="text-muted">Enter a domain name without http:// or https://</small>
+        </div>
+        
+        <div class="form-group mb-3">
+            <label>Scan Type:</label>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="scan_type" id="scan_type_basic" value="basic" 
+                       {% if request.form.get('scan_type') != 'comprehensive' %}checked{% endif %}>
+                <label class="form-check-label" for="scan_type_basic">
+                    Basic (Faster, less intensive)
+                </label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="scan_type" id="scan_type_comprehensive" value="comprehensive"
+                       {% if request.form.get('scan_type') == 'comprehensive' %}checked{% endif %}>
+                <label class="form-check-label" for="scan_type_comprehensive">
+                    Comprehensive (Slower, more thorough)
+                </label>
+            </div>
+        </div>
+        
+        <div class="form-group mb-3">
+            <label>Options:</label>
+            <div class="checkbox-group">
+                <input type="checkbox" class="form-check-input" id="shodan_enabled" name="shodan_enabled" 
+                       {% if 'shodan_enabled' in request.form %}checked{% endif %}>
+                <label class="form-check-label" for="shodan_enabled">
+                    Use Shodan for infrastructure footprinting
+                </label>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" class="form-check-input" id="subdomains_enabled" name="subdomains_enabled"
+                       {% if 'subdomains_enabled' in request.form %}checked{% endif %}>
+                <label class="form-check-label" for="subdomains_enabled">
+                    Perform subdomain enumeration
+                </label>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i> Start Reconnaissance
+            </button>
+        </div>
+    </form>
+</div>
+
+{% if results %}
+<div class="section">
+    <h2 class="section-title">
+        <i class="fas fa-clipboard-list"></i> Reconnaissance Results
+    </h2>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title mb-0">Target Information</h3>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <tr>
+                    <th width="30%">Target Domain:</th>
+                    <td>{{ results.target }}</td>
+                </tr>
+                <tr>
+                    <th>Scan Type:</th>
+                    <td>{{ results.scan_type|capitalize }}</td>
+                </tr>
+                <tr>
+                    <th>Timestamp:</th>
+                    <td>{{ results.timestamp }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    
+    {% if results.subdomains %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title mb-0">Subdomain Enumeration</h3>
+        </div>
+        <div class="card-body">
+            <p>Found {{ results.subdomains|length }} subdomains:</p>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Subdomain</th>
+                            <th>Status</th>
+                            <th>IP Address</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for subdomain in results.subdomains %}
+                        <tr>
+                            <td>{{ subdomain.subdomain }}</td>
+                            <td>{{ subdomain.status }}</td>
+                            <td>{{ subdomain.ip }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if results.dns_records %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title mb-0">DNS Records</h3>
+        </div>
+        <div class="card-body">
+            {% for record_type, records in results.dns_records.items() %}
+                {% if records and records|length > 0 and not 'error' in records[0] %}
+                <div class="mb-3">
+                    <h4>{{ record_type }} Records</h4>
+                    <ul>
+                        {% for record in records %}
+                        <li>{{ record }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            {% endfor %}
+            
+            {% if results.dns_records.error %}
+            <div class="alert alert-warning">
+                {{ results.dns_records.error }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if results.whois %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title mb-0">WHOIS Information</h3>
+        </div>
+        <div class="card-body">
+            {% if results.whois.error %}
+            <div class="alert alert-warning">
+                Error retrieving WHOIS data: {{ results.whois.error }}
+            </div>
+            {% else %}
+            <table class="table">
+                <tr>
+                    <th>Registrar:</th>
+                    <td>{{ results.whois.registrar }}</td>
+                </tr>
+                <tr>
+                    <th>Creation Date:</th>
+                    <td>{{ results.whois.creation_date }}</td>
+                </tr>
+                <tr>
+                    <th>Expiration Date:</th>
+                    <td>{{ results.whois.expiration_date }}</td>
+                </tr>
+                <tr>
+                    <th>Name Servers:</th>
+                    <td>
+                        <ul>
+                            {% for ns in results.whois.name_servers %}
+                            <li>{{ ns }}</li>
+                            {% endfor %}
+                        </ul>
+                    </td>
+                </tr>
+            </table>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if results.shodan_data %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title mb-0">Shodan Information</h3>
+        </div>
+        <div class="card-body">
+            {% if results.shodan_data.error %}
+            <div class="alert alert-warning">
+                {{ results.shodan_data.error }}
+            </div>
+            {% else %}
+            <div class="json-viewer">{{ results.shodan_data|tojson }}</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="mt-4">
+        <a href="{{ url_for('attack_surface') }}" class="btn btn-primary">
+            <i class="fas fa-map"></i> Proceed to Attack Surface Mapping
+        </a>
+        <form method="POST" action="{{ url_for('reports') }}" class="d-inline">
+            <input type="hidden" name="target" value="{{ results.target }}">
+            <input type="hidden" name="report_title" value="Reconnaissance Report - {{ results.target }}">
+            <button type="submit" class="btn btn-secondary">
+                <i class="fas fa-save"></i> Save Report
+            </button>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

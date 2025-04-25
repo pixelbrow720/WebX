@@ -1,0 +1,101 @@
+{% extends 'layout.html' %}
+
+{% block title %}Reports - Web Security Recon Tool{% endblock %}
+
+{% block content %}
+<div class="section">
+    <h1 class="section-title">
+        <i class="fas fa-file-alt"></i> Reports
+    </h1>
+    <p>Generate comprehensive security reports with findings and recommendations.</p>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title mb-0">Generate Report</h3>
+        </div>
+        <div class="card-body">
+            <form id="report-form" method="POST" action="{{ url_for('reports') }}">
+                <div class="form-group mb-3">
+                    <label for="target">Target Name/URL:</label>
+                    <input type="text" id="target" name="target" class="form-control" required
+                           placeholder="example.com">
+                </div>
+                
+                <div class="form-group mb-3">
+                    <label for="report_title">Report Title:</label>
+                    <input type="text" id="report_title" name="report_title" class="form-control" required
+                           placeholder="Security Assessment Report - example.com">
+                </div>
+                
+                <div class="form-group mb-3">
+                    <div class="checkbox-group">
+                        <input type="checkbox" class="form-check-input" id="ai_analysis" name="ai_analysis" checked>
+                        <label class="form-check-label" for="ai_analysis">
+                            Include AI-powered analysis and recommendations
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <p><i class="fas fa-info-circle"></i> This will generate a report using all the data collected in the current session.</p>
+                </div>
+                
+                <div class="form-group">
+                    <button type="button" id="generate-report-btn" class="btn btn-primary">
+                        <i class="fas fa-file-export"></i> Generate Report
+                    </button>
+                </div>
+            </form>
+            
+            <div id="report-loading" style="display: none;" class="loading mt-4">
+                <div class="spinner"></div>
+                <p class="loading-text">Generating report with AI analysis...</p>
+                <p class="loading-text">This may take a few moments</p>
+            </div>
+        </div>
+    </div>
+    
+    {% if reports %}
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title mb-0">Available Reports</h3>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Target</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report in reports %}
+                        <tr>
+                            <td>{{ report.title }}</td>
+                            <td>{{ report.target }}</td>
+                            <td>{{ report.timestamp }}</td>
+                            <td>
+                                <a href="{{ url_for('view_report', filename=report.filename) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                                <a href="{{ url_for('view_report', filename=report.filename) }}" download class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> No reports have been generated yet. Use the form above to create your first report.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
