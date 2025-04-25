@@ -1,0 +1,10 @@
+beautifulsoup4==4.13.4
+dnspython==2.6.1
+email-validator==2.2.1
+flask==3.0.3
+flask-sqlalchemy==3.1.1
+google-generativeai==0.8.5
+gunicorn==23.0.0
+psycopg2-binary==2.9.9
+requests==2.32.3
+werkzeug==3.0.3
